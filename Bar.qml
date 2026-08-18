@@ -56,20 +56,28 @@ Item {
   property bool centerHoverRevealSuppressed: false
   property int barConfigSerial: 0
   property string position: "top"
+  property int barMarginOuter: 4
+  property int barMarginInner: 8
+  property int barMarginSides: 12
+  property int barRadius: 16
   // Resolves through fontconfig at paint time (Style.font.family defaults
   // to "monospace"), so changing the system font (via `omarchy-font-set`)
   // updates the bar without a reload.
   property string fontFamily: Style.font.family
+  property color barForegroundColor: "#d0d0d0"
+  property color barBackgroundColor: "#1c1c1c"
+  property color barActiveColor: "#8a8a8a"
+
   // Bound to the central Color singleton so the bar tracks shell.toml's
   // [bar] section. Property names kept for the rest of this file's bindings.
-  property color themeForeground: Color.bar.text
+  property color themeForeground: barForegroundColor
   property color themeContrastForeground: Color.background
-  property color transparentForeground: Color.bar.text
+  property color transparentForeground: barForegroundColor
   property color foreground: themeForeground
   property color barForeground: useTransparentForeground ? transparentForeground : themeForeground
   property bool foregroundAnimationEnabled: true
-  property color background: Color.bar.background
-  property color urgent: Color.bar.active
+  property color background: barBackgroundColor
+  property color urgent: barActiveColor
 
   Behavior on barForeground { enabled: root.foregroundAnimationEnabled; ColorAnimation { duration: 420; easing.type: Easing.InOutCubic } }
   Behavior on background { ColorAnimation { duration: 420; easing.type: Easing.InOutCubic } }
@@ -358,6 +366,14 @@ Item {
     position = normalizePosition(config.position)
     setRequestedTransparency(config.transparent === true)
     centerAnchor = Util.canonicalWidgetId(config.centerAnchor || "")
+    var defaultMargin = typeof config.margin === "number" ? config.margin : -1
+    barMarginOuter = typeof config.marginOuter === "number" ? config.marginOuter : (defaultMargin !== -1 ? defaultMargin : 4)
+    barMarginInner = typeof config.marginInner === "number" ? config.marginInner : (defaultMargin !== -1 ? defaultMargin : 8)
+    barMarginSides = typeof config.marginSides === "number" ? config.marginSides : (defaultMargin !== -1 ? defaultMargin : 12)
+    barRadius = typeof config.radius === "number" ? config.radius : 16
+    barForegroundColor = typeof config.foregroundColor === "string" ? Qt.color(config.foregroundColor) : "#d0d0d0"
+    barBackgroundColor = typeof config.backgroundColor === "string" ? Qt.color(config.backgroundColor) : "#1c1c1c"
+    barActiveColor = typeof config.activeColor === "string" ? Qt.color(config.activeColor) : "#8a8a8a"
 
     // layoutEntries feeds plain JS arrays to the module Repeaters, and QML
     // cannot diff those: reassigning layoutConfig rebuilds every widget on
@@ -1003,10 +1019,26 @@ Item {
     }
 
     margins {
-      top: root.barHidden && root.position === "top" ? -root.barSize : 12
-      bottom: root.barHidden && root.position === "bottom" ? -root.barSize : 12
-      left: root.barHidden && root.position === "left" ? -root.barSize : 12
-      right: root.barHidden && root.position === "right" ? -root.barSize : 12
+      top: root.barHidden && root.position === "top" ? -root.barSize : (
+        root.position === "top" ? root.barMarginOuter : (
+          root.position === "bottom" ? root.barMarginInner : root.barMarginSides
+        )
+      )
+      bottom: root.barHidden && root.position === "bottom" ? -root.barSize : (
+        root.position === "bottom" ? root.barMarginOuter : (
+          root.position === "top" ? root.barMarginInner : root.barMarginSides
+        )
+      )
+      left: root.barHidden && root.position === "left" ? -root.barSize : (
+        root.position === "left" ? root.barMarginOuter : (
+          root.position === "right" ? root.barMarginInner : root.barMarginSides
+        )
+      )
+      right: root.barHidden && root.position === "right" ? -root.barSize : (
+        root.position === "right" ? root.barMarginOuter : (
+          root.position === "left" ? root.barMarginInner : root.barMarginSides
+        )
+      )
     }
 
     anchors {
@@ -1025,7 +1057,7 @@ Item {
 
     Rectangle {
       anchors.fill: parent
-      radius: 16
+      radius: root.barRadius
       clip: true
       color: root.transparent ? "transparent" : Qt.rgba(root.background.r, root.background.g, root.background.b, 0.6)
       border.color: Qt.rgba(1.0, 1.0, 1.0, 0.15)
