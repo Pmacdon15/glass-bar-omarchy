@@ -6,15 +6,21 @@ This is a customized status bar for Omarchy, replacing the default `omarchy.bar`
 
 I'm open to Pull Requests (PRs) if anyone needs something fixed, tweaked, or added!
 
-## Installation
+## Installation & Removal
 
 To add this plugin to your Omarchy shell:
 
 ```bash
-omarchy plugin add https://github.com/Pmacdon15/glass-bar-omarchy
+ --yes
 ```
 
 Once installed, it will replace your default status bar.
+
+To remove this plugin and revert to the default:
+
+```bash
+omarchy plugin remove glass-bar-omarchy
+```
 
 ## Technical Details
 
