@@ -11,7 +11,7 @@ I'm open to Pull Requests (PRs) if anyone needs something fixed, tweaked, or add
 To add this plugin to your Omarchy shell:
 
 ```bash
- --yes
+omarchy plugin add  https://github.com/Pmacdon15/glass-bar-omarchy --enable
 ```
 
 Once installed, it will replace your default status bar.
