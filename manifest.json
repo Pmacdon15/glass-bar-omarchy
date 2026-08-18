@@ -1,9 +1,9 @@
 {
   "schemaVersion": 1,
-  "id": "pmacd.bar",
-  "name": "My Bar",
+  "id": "glass-bar-omarchy",
+  "name": "glass-bar-omarchy",
   "version": "1.0.0",
-  "author": "Omarchy",
+  "author": "Pmacdon15",
   "description": "Status bar with widgets",
   "kinds": [
     "bar"

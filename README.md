@@ -1,20 +1,32 @@
-# Omarchy bar
+# glass-bar-omarchy
 
-This is the Quickshell implementation of the Omarchy status bar. It is
-shipped as a first-party plugin of [`omarchy-shell`](../../README.md), the
-long-running shell host. The bar is mounted at startup and lives inside
-the shell for its whole session.
+![Glass Bar Preview](preview.png)
 
-- `manifest.json` declares the plugin (`id: omarchy.bar`, `kind: bar`) and points at `Bar.qml` as the entry point.
-- `Bar.qml` is Omarchy-owned bar engine code, loaded by the omarchy-shell host. Users should not edit it directly.
-- `widgets/` holds simple first-party bar widgets with sibling manifests.
-- Feature plugins such as `../panels/audio/`, `../panels/network/`, `../panels/power/`, and `../agents/` provide richer popup bar plugins.
+This is a customized status bar for Omarchy, replacing the default `omarchy.bar`. I wanted a glass bar with rounded corners and vibe coded it.
+
+I'm open to Pull Requests (PRs) if anyone needs something fixed, tweaked, or added!
+
+## Installation
+
+To add this plugin to your Omarchy shell:
+
+```bash
+omarchy plugin add https://github.com/Pmacdon15/glass-bar-omarchy
+```
+
+Once installed, it will replace your default status bar.
+
+## Technical Details
+
+- `manifest.json` declares the plugin (`id: glass-bar-omarchy`, `kind: bar`) and points at `Bar.qml` as the entry point.
+- `Bar.qml` is the main bar engine.
+- `widgets/` holds the bar widgets with sibling manifests.
 - The bar receives its config from the host shell as a `barConfig` property; the host loads it from `~/.config/omarchy/shell.json` (or `config/omarchy/shell.json` when the user has no file).
-- `omarchy bar position` updates only the user shell.json file.
+- `omarchy bar position` updates only the user `shell.json` file.
 
 ## Customizing
 
-The bar config lives under the `bar:` key of [`~/.config/omarchy/shell.json`](../../README.md#shelljson-shape). Out of the box the shell uses [`config/omarchy/shell.json`](../../../config/omarchy/shell.json). Once you customize anything via the bar gestures, `omarchy bar ...`, or by editing shell.json directly, your file is canonical — there is no deep-merge.
+The bar config lives under the `bar:` key of `~/.config/omarchy/shell.json`. Once you customize anything via the bar gestures, `omarchy bar ...`, or by editing shell.json directly, your file is canonical — there is no deep-merge.
 
 The bar is configured directly on the bar itself: drag empty bar space (or click-and-hold) to move the bar to another screen edge, double-left-click empty center-bar space to toggle transparency, and drag widgets to reorder them. The `omarchy bar position`, `omarchy bar transparent`, `omarchy bar move`, and `omarchy bar set` commands do the same from scripts. Enable or disable widgets with `omarchy plugin enable` and `omarchy plugin disable` (widget ids come from `omarchy plugin list`).
 
@@ -177,7 +189,6 @@ namespaced ids.
 
 Third-party widgets ship as separate plugins under
 `~/.config/omarchy/plugins/<plugin-id>/` with their own `manifest.json`
-declaring `kinds: ["bar-widget"]` and a `barWidget` entry point. See
-[../../README.md](../../README.md) for the manifest schema. Rescan, enable,
+declaring `kinds: ["bar-widget"]` and a `barWidget` entry point. Refer to the official Omarchy documentation for the manifest schema. Rescan, enable,
 and place third-party plugins with `omarchy-shell shell rescanPlugins`,
 `omarchy plugin enable`, and `omarchy bar move`.
