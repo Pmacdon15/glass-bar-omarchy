@@ -17,6 +17,54 @@ function entrySettings(entry) {
   return copy
 }
 
+// ---- 12-hour clock. The glass bar shows the omarchy.clock widget on a
+//      12-hour clock with AM/PM. Formats are rewritten as they are handed to
+//      the widget, so 24-hour formats already in shell.json (including the
+//      Omarchy default "dddd HH:mm") come out as 12-hour without the user
+//      editing anything. Set "use24Hour": true on the clock entry to opt out.
+var CLOCK_IDS = ["omarchy.clock", "Clock"]
+var CLOCK_FORMAT_KEYS = ["format", "formatAlt", "verticalFormat", "verticalFormatAlt"]
+var DEFAULT_12H_FORMAT = "dddd h:mm AP"
+var DEFAULT_12H_VERTICAL_FORMAT = "h\n—\nmm\nAP"
+
+// Rewrites the 24-hour tokens (H, HH) of a Qt date/time format to the 12-hour
+// token (h) and appends an AP marker when the format has none. Quoted
+// literals such as 'W' are left untouched. Formats without an hour pass
+// through unchanged.
+function to12HourFormat(format) {
+  if (typeof format !== "string" || format === "") return format
+  var parts = format.split(/('[^']*'?)/)
+  var hasHour24 = false
+  var hasMarker = false
+  for (var i = 0; i < parts.length; i++) {
+    if (parts[i].charAt(0) === "'") continue
+    if (/H/.test(parts[i])) hasHour24 = true
+    if (/AP|ap|A|a/.test(parts[i])) hasMarker = true
+  }
+  if (!hasHour24) return format
+  for (var j = 0; j < parts.length; j++) {
+    if (parts[j].charAt(0) === "'") continue
+    parts[j] = parts[j].replace(/HH?/g, "h")
+  }
+  var result = parts.join("")
+  if (!hasMarker) result += result.indexOf("\n") !== -1 ? "\nAP" : " AP"
+  return result
+}
+
+function clockSettings(id, settings) {
+  if (CLOCK_IDS.indexOf(String(id || "")) === -1) return settings
+  if (!isPlainObject(settings) || settings.use24Hour === true) return settings
+  var copy = {}
+  for (var key in settings) copy[key] = settings[key]
+  for (var i = 0; i < CLOCK_FORMAT_KEYS.length; i++) {
+    var name = CLOCK_FORMAT_KEYS[i]
+    if (name in copy) copy[name] = to12HourFormat(copy[name])
+  }
+  if (!("format" in copy)) copy.format = DEFAULT_12H_FORMAT
+  if (!("verticalFormat" in copy)) copy.verticalFormat = DEFAULT_12H_VERTICAL_FORMAT
+  return copy
+}
+
 function entryId(entry) {
   if (typeof entry === "string") return entry
   if (isPlainObject(entry)) {
@@ -216,6 +264,8 @@ if (typeof module !== "undefined") {
     nearestDropTarget: nearestDropTarget,
     normalizePosition: normalizePosition,
     entrySettings: entrySettings,
+    to12HourFormat: to12HourFormat,
+    clockSettings: clockSettings,
     entryId: entryId,
     pinTrayToInner: pinTrayToInner,
     moduleString: moduleString,

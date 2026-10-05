@@ -64,6 +64,16 @@ Example `shell.json` (bar subtree only shown):
 }
 ```
 
+### 12-hour clock
+
+The glass bar shows the clock on a 12-hour clock with AM/PM (e.g. `Sunday 10:21 PM`). Any 24-hour format in your `shell.json` — including the Omarchy default `dddd HH:mm` — is shown as its 12-hour equivalent, so no config edits are needed. Right-click the clock to cycle formats as usual.
+
+To keep 24-hour time, add `"use24Hour": true` to the clock entry:
+
+```json
+{ "id": "omarchy.clock", "format": "dddd HH:mm", "use24Hour": true }
+```
+
 `centerAnchor` pins one center module to the exact horizontal/vertical center and flanks others around it. Set to an empty string to disable anchoring (the center list is centered as a group).
 
 ## Module catalogue
