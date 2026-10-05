@@ -551,7 +551,8 @@ Item {
   }
 
   function entrySettings(entry) {
-    return BarModel.entrySettings(entry)
+    var settings = BarModel.entrySettings(entry)
+    return BarModel.clockSettings(canonicalWidgetId(BarModel.entryId(entry)), settings)
   }
 
   function entryId(entry) {
