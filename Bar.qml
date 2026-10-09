@@ -965,6 +965,58 @@ Item {
     onFileChanged: barHiddenProbe.running = true
   }
 
+  // The screensaver opens fullscreen on a special workspace (since Omarchy
+  // #3284), and Hyprland does not cover top-layer surfaces for a fullscreen
+  // window there, so the bar would draw on top of it. Track the screensaver's
+  // windows and fade the bar out while any is mapped. The surface and its
+  // exclusion zone stay put, so windows underneath don't reflow.
+  readonly property string screensaverClass: "org.omarchy.screensaver"
+  property var screensaverWindows: ({})
+  property bool screensaverActive: false
+
+  function normalizeWindowAddress(address) {
+    return String(address || "").trim().replace(/^0x/, "")
+  }
+
+  function setScreensaverWindow(address, present) {
+    var key = normalizeWindowAddress(address)
+    if (key === "") return
+    var next = Object.assign({}, screensaverWindows)
+    if (present) next[key] = true
+    else if (next[key]) delete next[key]
+    else return
+    screensaverWindows = next
+    screensaverActive = Object.keys(next).length > 0
+    if (screensaverActive) {
+      tooltipRequest += 1
+      clearTooltip()
+    }
+  }
+
+  Connections {
+    target: Hyprland
+
+    function onRawEvent(event) {
+      if (event.name === "openwindow") {
+        // ADDRESS,WORKSPACE,CLASS,TITLE — the title may contain commas.
+        var fields = String(event.data).split(",")
+        if (fields.length >= 3 && fields[2] === root.screensaverClass)
+          root.setScreensaverWindow(fields[0], true)
+      } else if (event.name === "closewindow") {
+        root.setScreensaverWindow(event.data, false)
+      }
+    }
+  }
+
+  // Catch a screensaver that was already up when the shell (re)loaded.
+  Process {
+    id: screensaverProbe
+    running: true
+    environment: ({ SCREENSAVER: root.screensaverClass })
+    command: ["bash", "-c", "hyprctl clients -j 2>/dev/null | jq -r '.[] | select(.mapped and .class == env.SCREENSAVER) | .address'"]
+    stdout: SplitParser { onRead: function(line) { root.setScreensaverWindow(line, true) } }
+  }
+
   Variants {
     model: Quickshell.screens
 
@@ -1055,11 +1107,19 @@ Item {
     surfaceFormat.opaque: false
     WlrLayershell.namespace: "omarchy-bar"
     WlrLayershell.layer: WlrLayer.Top
+    // While the screensaver runs, an empty input region lets pointer motion
+    // over the bar's strip reach the screensaver and dismiss it.
+    mask: root.screensaverActive ? screensaverInputMask : null
+
+    Region { id: screensaverInputMask }
 
     Rectangle {
       anchors.fill: parent
       radius: root.barRadius
       clip: true
+      opacity: root.screensaverActive ? 0 : 1
+      visible: opacity > 0
+      Behavior on opacity { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
       color: root.transparent ? "transparent" : Qt.rgba(root.background.r, root.background.g, root.background.b, 0.6)
       border.color: Qt.rgba(1.0, 1.0, 1.0, 0.15)
       border.width: 1
@@ -1078,7 +1138,7 @@ Item {
     PopupWindow {
       id: tooltipWindow
 
-      visible: root.tooltipShown && root.tooltipTarget !== null && root.tooltipText !== "" && root.targetBelongsToWindow(root.tooltipTarget, barWindow)
+      visible: !root.screensaverActive && root.tooltipShown && root.tooltipTarget !== null && root.tooltipText !== "" && root.targetBelongsToWindow(root.tooltipTarget, barWindow)
       color: "transparent"
       implicitWidth: Math.ceil(tooltipBubble.implicitWidth)
       implicitHeight: Math.ceil(tooltipBubble.implicitHeight)
