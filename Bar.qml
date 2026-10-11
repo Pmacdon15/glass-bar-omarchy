@@ -57,7 +57,7 @@ Item {
   property int barConfigSerial: 0
   property string position: "top"
   property int barMarginOuter: 4
-  property int barMarginInner: 8
+  property int barMarginInner: 2
   property int barMarginSides: 12
   property int barRadius: 16
   // Resolves through fontconfig at paint time (Style.font.family defaults
@@ -368,7 +368,7 @@ Item {
     centerAnchor = Util.canonicalWidgetId(config.centerAnchor || "")
     var defaultMargin = typeof config.margin === "number" ? config.margin : -1
     barMarginOuter = typeof config.marginOuter === "number" ? config.marginOuter : (defaultMargin !== -1 ? defaultMargin : 4)
-    barMarginInner = typeof config.marginInner === "number" ? config.marginInner : (defaultMargin !== -1 ? defaultMargin : 8)
+    barMarginInner = typeof config.marginInner === "number" ? config.marginInner : (defaultMargin !== -1 ? defaultMargin : 2)
     barMarginSides = typeof config.marginSides === "number" ? config.marginSides : (defaultMargin !== -1 ? defaultMargin : 12)
     barRadius = typeof config.radius === "number" ? config.radius : 16
     barForegroundColor = typeof config.foregroundColor === "string" ? Qt.color(config.foregroundColor) : "#d0d0d0"
