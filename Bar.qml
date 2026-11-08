@@ -965,6 +965,16 @@ Item {
     onFileChanged: barHiddenProbe.running = true
   }
 
+  // `omarchy toggle bar` nudges this after flipping the flag, in case the
+  // directory watch has gone quiet.
+  ShellIpc {
+    target: "omarchy.bar"
+
+    function syncHidden(): void {
+      barHiddenProbe.running = true
+    }
+  }
+
   // The screensaver opens fullscreen on a special workspace (since Omarchy
   // #3284), and Hyprland does not cover top-layer surfaces for a fullscreen
   // window there, so the bar would draw on top of it. Track the screensaver's
@@ -1063,13 +1073,7 @@ Item {
     // reveal has to rebuild them — new surface, re-shaped glyphs, re-uploaded
     // textures — which measures ~150ms against ~20ms to tear down. Parking
     // keeps the surface alive, so showing is only a margin change.
-    visible: !remapGuard.remapping
     exclusionMode: root.barHidden ? ExclusionMode.Ignore : ExclusionMode.Auto
-
-    ScreenMoveRemap {
-      id: remapGuard
-      window: barWindow
-    }
 
     margins {
       top: root.barHidden && root.position === "top" ? -root.barSize : (
