@@ -967,6 +967,77 @@ Item {
 
   // `omarchy toggle bar` nudges this after flipping the flag, in case the
   // directory watch has gone quiet.
+  // Third-party widgets get their own bar api instead of this bar, the way the
+  // built-in bar does it. Its `shell` is the per-widget entry facade from
+  // omarchy-shell, so a widget whose plugin hosts a service (Google Calendar,
+  // say) sees a service-less facade scoped to itself and takes its own
+  // fallback, rather than this bar's facade, whose serviceFor() only answers
+  // for glass-bar-omarchy and returns null for everyone else (issue #5).
+  property var pluginBarApis: ({})
+
+  Component {
+    id: pluginBarApiComponent
+    PluginBarApi { }
+  }
+
+  function pluginBarApiFor(moduleName, registered) {
+    var name = String(moduleName || "")
+    if (!name) return null
+    var key = registered ? root.canonicalWidgetId(name) : "bar-entry:" + name
+
+    var pluginShell = root.shell && typeof root.shell.pluginShellForBarEntry === "function"
+      ? root.shell.pluginShellForBarEntry(key, name) : null
+
+    var existing = pluginBarApis[key]
+    if (existing) {
+      existing.shell = pluginShell
+      existing.activePopout = Qt.binding(function() { return root.activePopout })
+      return existing
+    }
+
+    var api = pluginBarApiComponent.createObject(root, {
+      pluginId: key,
+      moduleName: name,
+      shell: pluginShell,
+      _showTooltip: function(target, text) { root.showTooltip(target, text) },
+      _hideTooltip: function(target) { root.hideTooltip(target) },
+      _registerClickTarget: function(target) { root.registerClickTarget(target) },
+      _unregisterClickTarget: function(target) { root.unregisterClickTarget(target) },
+      _requestPopout: function(owner) { root.requestPopout(owner) },
+      _releasePopout: function(owner) { root.releasePopout(owner) },
+      _switchPanelFrom: function(owner, direction) { return root.switchPanelFrom(owner, direction) },
+      _targetBelongsToWindow: function(target, window) { return root.targetBelongsToWindow(target, window) },
+      _moduleWidgets: function(requestedId) {
+        return String(requestedId || "") === name ? root.moduleWidgets(name) : []
+      },
+      _run: function(command) { root.run(command) },
+      _setCenterHoverRevealSuppressed: function(value) { root.centerHoverRevealSuppressed = !!value }
+    })
+    if (!api) return null
+
+    api.foreground = Qt.binding(function() { return root.foreground })
+    api.barForeground = Qt.binding(function() { return root.barForeground })
+    api.background = Qt.binding(function() { return root.background })
+    api.urgent = Qt.binding(function() { return root.urgent })
+    api.fontFamily = Qt.binding(function() { return root.fontFamily })
+    api.position = Qt.binding(function() { return root.position })
+    api.vertical = Qt.binding(function() { return root.vertical })
+    api.barSize = Qt.binding(function() { return root.barSize })
+    api.transparent = Qt.binding(function() { return root.transparent })
+    api.foregroundAnimationEnabled = Qt.binding(function() { return root.foregroundAnimationEnabled })
+    api.centerSectionRevealHeld = Qt.binding(function() { return root.centerSectionRevealHeld })
+    api._centerHoverRevealSuppressed = Qt.binding(function() { return root.centerHoverRevealSuppressed })
+    api.activePopout = Qt.binding(function() { return root.activePopout })
+    api.clickTargets = Qt.binding(function() { return root.clickTargets })
+    api.layoutConfig = Qt.binding(function() { return root.layoutConfig })
+
+    var next = ({})
+    for (var id in pluginBarApis) next[id] = pluginBarApis[id]
+    next[key] = api
+    pluginBarApis = next
+    return api
+  }
+
   ShellIpc {
     target: "omarchy.bar"
 
@@ -1642,6 +1713,10 @@ Item {
     readonly property bool qmlCustom: customType === "qml"
     readonly property bool commandCustom: customType === "command"
     readonly property bool registered: registryComponent !== null
+    readonly property var registryMetadata: root.barWidgetRegistry && typeof root.barWidgetRegistry.metadataFor === "function"
+      ? root.barWidgetRegistry.metadataFor(root.canonicalWidgetId(moduleName)) : null
+    // Command and QML custom modules are this bar's own, so they keep it.
+    readonly property bool firstParty: customType !== "" || (registryMetadata && registryMetadata.firstParty === true)
     readonly property var activeItem: {
       if (registered) return registryLoader.item
       if (qmlCustom) return qmlLoader.item
@@ -1848,7 +1923,8 @@ Item {
     function injectProps() {
       var target = activeItem
       if (!target) return
-      if ("bar" in target) target.bar = root
+      if ("bar" in target) target.bar = slot.firstParty
+        ? root : root.pluginBarApiFor(moduleName, registered)
       if ("moduleName" in target) target.moduleName = moduleName
       if ("settings" in target) target.settings = moduleSettings
     }
